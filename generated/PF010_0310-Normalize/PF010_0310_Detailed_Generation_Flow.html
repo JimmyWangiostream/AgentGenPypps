@@ -1,0 +1,1174 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PF010_0310 Detailed Generation Flow</title>
+<style>
+:root{--bg:#07111f;--panel:#0e1b2d;--panel2:#12243a;--ink:#edf6ff;--muted:#a7b8d3;--line:#28486d;--accent:#6ee7c8;--accent2:#8bb8ff;--warn:#ffd166;--code:#04101d;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--sans:Inter,system-ui,"Noto Sans TC","Microsoft JhengHei",sans-serif}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 10% 0%,#16405a 0,transparent 30rem),radial-gradient(circle at 90% 0%,#263265 0,transparent 28rem),var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.72}.layout{display:grid;grid-template-columns:310px minmax(0,1fr);gap:28px;width:min(1440px,calc(100% - 36px));margin:0 auto}aside{position:sticky;top:0;height:100vh;padding:28px 0;overflow:auto}.toc{border:1px solid var(--line);border-radius:22px;background:#ffffff0b;padding:18px}.toc h2{font-size:17px;margin:0 0 12px}.toc a{display:block;color:var(--muted);text-decoration:none;padding:7px 0;border-bottom:1px solid #ffffff10;font-size:13px}.toc a:hover{color:var(--accent)}main{padding:54px 0 90px}.doc{background:linear-gradient(180deg,#ffffff0e,#ffffff08);border:1px solid var(--line);border-radius:28px;padding:clamp(24px,4vw,58px);box-shadow:0 30px 90px #0008}h1{font-size:clamp(38px,6vw,68px);line-height:1.02;letter-spacing:-.055em;margin:0 0 22px}h2{font-size:clamp(26px,4vw,42px);line-height:1.08;letter-spacing:-.035em;margin:56px 0 18px;padding-top:12px;border-top:1px solid #ffffff18}h3{font-size:22px;margin:32px 0 10px;color:#eaf4ff}p,li{color:var(--muted)}strong{color:var(--ink)}code{font-family:var(--mono);background:#ffffff12;border:1px solid #ffffff1c;border-radius:6px;padding:1px 5px;color:#dff7ff}pre{background:var(--code);border:1px solid #244568;border-radius:18px;padding:18px;overflow:auto;box-shadow:inset 0 0 0 1px #0006}pre code{background:transparent;border:0;padding:0;color:#e8f2ff;white-space:pre;font-size:13px}.table-as-code{margin:.25rem 0;border-radius:10px;padding:8px 12px}hr{border:0;border-top:1px solid var(--line);margin:36px 0}ul{padding-left:22px}.banner{display:inline-flex;color:var(--accent);font:13px var(--mono);border:1px solid #6ee7c866;border-radius:999px;padding:8px 12px;margin-bottom:18px;background:#6ee7c80e}.note{margin-top:26px;padding:16px 18px;border-left:4px solid var(--accent);background:#6ee7c80c;color:#cfe8ff;border-radius:12px}@media(max-width:980px){.layout{display:block}aside{position:relative;height:auto}}
+</style></head><body><div class="layout"><aside><div class="toc"><div class="banner">Detailed Flow</div><h2>目錄</h2><a href="#1-整體角色分工">1. 整體角色分工</a>
+<a href="#2-完整執行順序總覽">2. 完整執行順序總覽</a>
+<a href="#3-Step-1-Markdown-解析成-IR">3. Step 1：Markdown 解析成 IR</a>
+<a href="#4-Step-2-Flow-boundary-detection">4. Step 2：Flow boundary detection</a>
+<a href="#5-Step-3-Step-IR">5. Step 3：Step IR</a>
+<a href="#6-Step-4-State-Dependency-Graph">6. Step 4：State / Dependency Graph</a>
+<a href="#7-Step-5-LLM-Wiki-retrieval-的產物與先後順序">7. Step 5：LLM Wiki retrieval 的產物與先後順序</a>
+<a href="#8-Step-6-GitNexus-PyPPS-code-grounding">8. Step 6：GitNexus / PyPPS code grounding</a>
+<a href="#9-Step-7-LLM-Model-的角色與限制">9. Step 7：LLM Model 的角色與限制</a>
+<a href="#10-Step-8-Decision-Layer-詳細順序">10. Step 8：Decision Layer 詳細順序</a>
+<a href="#10A-UserPrompt-與-ModelDefault-Priority-機制">10A. UserPrompt 與 ModelDefault Priority 機制</a>
+<a href="#11-Step-9-Flow-Plan">11. Step 9：Flow Plan</a>
+<a href="#12-Step-10-Pattern-IR-與-code-generation">12. Step 10：Pattern IR 與 code generation</a>
+<a href="#13-Step-11-Artifacts-產生">13. Step 11：Artifacts 產生</a>
+<a href="#14-Step-12-Validation-詳細流程">14. Step 12：Validation 詳細流程</a>
+<a href="#15-互動順序-LLM-Wiki-GitNexus-LLM-model">15. 互動順序：LLM Wiki、GitNexus、LLM model</a>
+<a href="#16-PF010-0310-實際例子-Flow-1-完整路徑">16. PF010_0310 實際例子：Flow 1 完整路徑</a>
+<a href="#17-最後輸出物">17. 最後輸出物</a>
+<a href="#18-總結">18. 總結</a></div></aside><main><article class="doc"><h1>PF010_0310 / UFS PyPPS Pattern Generation 詳細流程說明</h1>
+<p>本文說明目前 AgentGeneratePypps 產生 Pattern 的完整設計：從 TC markdown 解析成 IR，到 LLM Wiki retrieval、GitNexus / PyPPS code grounding、LLM model 決策、Pattern code 產生，以及 artifacts / validation 的順序與交互作用。</p>
+<p>對應範例：</p>
+<pre><code>TC/PF010_0310-Normalize.md
+  -&gt; generated/PF010_0310-Normalize/PF010_0310_Normalize.py</code></pre>
+<p>核心原則：</p>
+<pre><code>一個 TC -&gt; 一個 Pattern folder + 一個 Pattern .py
+一個 flow/phase -&gt; 一個 stateful generation unit
+flow 內 steps 保持順序、state、變數依賴
+retrieval 可以 per flow / per action group，但 code generation 不能 per step isolated</code></pre>
+<hr>
+<h2 id="1-整體角色分工">1. 整體角色分工</h2>
+<p>Pattern generation 裡有四個主要資訊來源 / 角色：</p>
+<pre><code>1. TC markdown
+   決定 WHAT to test。
+   例如測什麼 flag、什麼 reset、什麼 expected result。
+
+2. LLM Wiki
+   提供 domain/spec/customer/model-default knowledge。
+   例如 UFS Query、WriteBooster flag behavior、reset baseline、default policy。
+
+3. GitNexus / PyPPS codebase
+   提供 HOW to write PyPPS code。
+   例如 api.read_flag() signature、random_write() signature、enum 是否存在。
+
+4. LLM model
+   不直接當作事實來源。
+   它負責 parse、classify、merge、resolve conflict、生成 IR / code / artifacts。
+   所有重要決策都要回指到 TC / LLM Wiki / GitNexus / ModelDefault。</code></pre>
+<p>換句話說：</p>
+<pre><code>TC 說要測什麼。
+LLM Wiki 說規格/知識上這代表什麼。
+GitNexus 說目前 PyPPS 要怎麼寫。
+LLM model 負責把這三者合成 Pattern，但不能憑空發明 API 或 expected value。</code></pre>
+<hr>
+<h2 id="2-完整執行順序總覽">2. 完整執行順序總覽</h2>
+<p>目前預期順序如下：</p>
+<pre><code>[0] Input TC markdown
+      |
+      v
+[1] Markdown parser
+      |
+      v
+[2] TC IR / Global Context / Flow IR / Step IR
+      |
+      v
+[3] Flow boundary detection
+      |
+      v
+[4] State &amp; dependency analysis
+      |
+      v
+[5] For each flow:
+      |-- [5.1] Build flow-specific retrieval query
+      |-- [5.2] Query LLM Wiki: BM25 + Dense + RRF
+      |-- [5.3] Query GitNexus / direct PyPPS code references
+      |-- [5.4] Normalize evidence into Evidence IR
+      |-- [5.5] Decision Layer applies source priority
+      |-- [5.6] Build Flow Plan
+      |-- [5.7] Validate dependency coverage
+      |
+      v
+[6] Assemble Pattern IR
+      |
+      v
+[7] Generate Pattern .py
+      |
+      v
+[8] Generate artifacts:
+      |-- retrieval.md
+      |-- assumptions.json
+      |-- validation.json
+      |
+      v
+[9] Run validation:
+      |-- python py_compile
+      |-- AST structure check
+      |-- flow coverage check
+      |-- dependency check
+      |
+      v
+[10] Final report / HTML</code></pre>
+<p>重要：LLM Wiki 和 GitNexus 不是互相取代，而是回答不同問題。</p>
+<pre><code>LLM Wiki answer: 這個 TC 的 behavior/spec/customer/default 意義是什麼？
+GitNexus answer: 這個 behavior 在目前 PyPPS 裡要用哪個 API / enum / class 寫？
+LLM model answer: 綜合 evidence 後，產生哪個 flow plan / code / assumptions？</code></pre>
+<hr>
+<h2 id="3-Step-1-Markdown-解析成-IR">3. Step 1：Markdown 解析成 IR</h2>
+<h3>3.1 解析目標</h3>
+<p>Markdown parser 的第一階段不是直接產生 code，而是產生 IR。</p>
+<p>IR 的目的是讓後續每一層都能 trace：</p>
+<pre><code>原始 TC 文字
+  -&gt; 哪個 flow
+  -&gt; 哪個 step
+  -&gt; step action type
+  -&gt; step reads/writes 哪些 state
+  -&gt; 需要哪些 retrieval evidence
+  -&gt; 產生哪段 Pattern code</code></pre>
+<h3>3.2 TC IR 結構</h3>
+<p>建議 TC IR 長這樣：</p>
+<pre><code>{
+  &quot;pattern_name&quot;: &quot;PF010_0310-Normalize&quot;,
+  &quot;source_file&quot;: &quot;TC/PF010_0310-Normalize.md&quot;,
+  &quot;purpose&quot;: &quot;WriteBooster reset behavior validation&quot;,
+  &quot;preconditions&quot;: [],
+  &quot;global_context&quot;: {
+    &quot;units&quot;: &quot;4K blocks&quot;,
+    &quot;default_lun_policy&quot;: &quot;max capacity enabled LUN&quot;,
+    &quot;missing_fields&quot;: []
+  },
+  &quot;flows&quot;: []
+}</code></pre>
+<h3>3.3 Global Context</h3>
+<p>Global context 放跨 flow 共用的資訊，不屬於單一步驟：</p>
+<pre><code>{
+  &quot;global_context&quot;: {
+    &quot;pattern_name&quot;: &quot;PF010_0310-Normalize&quot;,
+    &quot;test_lun_policy&quot;: &quot;max capacity enabled LUN&quot;,
+    &quot;lba_range_policy&quot;: &quot;0..max_lba of selected LUN&quot;,
+    &quot;transfer_length_unit&quot;: &quot;4K blocks&quot;,
+    &quot;write_record_scope&quot;: &quot;global Pattern instance&quot;,
+    &quot;loop_policy&quot;: &quot;burn_in_loop from tcsargs or ModelDefault&quot;,
+    &quot;reset_candidates&quot;: [&quot;SSU&quot;, &quot;POR&quot;, &quot;LINKSTARTUP&quot;]
+  }
+}</code></pre>
+<p>PF010_0310 例子裡，<code>self.test_lun</code>、<code>self.write_record</code>、<code>seed</code>、<code>cmd_count</code> 都是 global context。</p>
+<hr>
+<h2 id="4-Step-2-Flow-boundary-detection">4. Step 2：Flow boundary detection</h2>
+<h3>4.1 為什麼不能整份 TC 一次 gen</h3>
+<p>整份 TC 一次 gen 的問題：</p>
+<pre><code>- retrieval query 太長、太混雜
+- SET FLAG / CLEAR FLAG / Flush flag 的 expected value 可能互相污染
+- reset_type 對 expected value 的關聯可能被混淆
+- optional flow 例如 FFU 可能被 silently dropped</code></pre>
+<h3>4.2 為什麼不能每個 step isolated gen</h3>
+<p>每個 step 孤立 gen 的問題：</p>
+<pre><code>- Step 1.2 random_write 產生的 write_record 會在 Step 1.3 compare 用到
+- Step 1.4 reset_type 會在 Step 1.5 expected flag value 用到
+- Step 2.2 CLEAR FLAG 會影響 Step 2.5 expected value
+- selected LUN / LBA range / seed / cmd_count 都是跨 step state</code></pre>
+<p>所以正確 granularity 是：</p>
+<pre><code>Flow-scoped retrieval + flow-level stateful generation</code></pre>
+<h3>4.3 PF010_0310 Flow IR</h3>
+<p>PF010_0310 目前拆成：</p>
+<pre><code>{
+  &quot;flows&quot;: [
+    {
+      &quot;flow_id&quot;: &quot;flow_0_setup&quot;,
+      &quot;method&quot;: &quot;step1&quot;,
+      &quot;tc_steps&quot;: [&quot;0.1&quot;, &quot;0.2&quot;, &quot;0.3&quot;, &quot;0.4&quot;],
+      &quot;objective&quot;: &quot;setup, capacity, WriteBooster support, allocation attribute check&quot;
+    },
+    {
+      &quot;flow_id&quot;: &quot;flow_x_ffu&quot;,
+      &quot;method&quot;: &quot;_maybe_ffu_flow_checkpoint&quot;,
+      &quot;tc_steps&quot;: [&quot;X.1&quot;, &quot;X.2&quot;, &quot;X.3&quot;],
+      &quot;objective&quot;: &quot;optional FFU checkpoint during burn-in&quot;
+    },
+    {
+      &quot;flow_id&quot;: &quot;flow_1_enable_reset&quot;,
+      &quot;method&quot;: &quot;step2&quot;,
+      &quot;tc_steps&quot;: [&quot;1.1&quot;, &quot;1.2&quot;, &quot;1.3&quot;, &quot;1.4&quot;, &quot;1.5&quot;],
+      &quot;objective&quot;: &quot;WB enable, W/R compare, reset expected check&quot;
+    },
+    {
+      &quot;flow_id&quot;: &quot;flow_2_disable_reset&quot;,
+      &quot;method&quot;: &quot;step3&quot;,
+      &quot;tc_steps&quot;: [&quot;2.1&quot;, &quot;2.2&quot;, &quot;2.3&quot;, &quot;2.4&quot;, &quot;2.5&quot;],
+      &quot;objective&quot;: &quot;WB clear/disable, read compare, reset expected check&quot;
+    },
+    {
+      &quot;flow_id&quot;: &quot;flow_3_flush_reset&quot;,
+      &quot;method&quot;: &quot;step4&quot;,
+      &quot;tc_steps&quot;: [&quot;3.1&quot;, &quot;3.2&quot;, &quot;3.3&quot;],
+      &quot;objective&quot;: &quot;Flush enable flag, reset expected check&quot;
+    }
+  ]
+}</code></pre>
+<hr>
+<h2 id="5-Step-3-Step-IR">5. Step 3：Step IR</h2>
+<p>每個 flow 裡會有 ordered Step IR。</p>
+<p>Step IR 建議欄位：</p>
+<pre><code>{
+  &quot;step_id&quot;: &quot;1.4&quot;,
+  &quot;flow_id&quot;: &quot;flow_1_enable_reset&quot;,
+  &quot;raw_text&quot;: &quot;Perform SSU/POR/LINKSTARTUP reset&quot;,
+  &quot;action_type&quot;: &quot;reset_loop&quot;,
+  &quot;target&quot;: &quot;device_reset&quot;,
+  &quot;parameters&quot;: {
+    &quot;reset_candidates&quot;: [&quot;SSU&quot;, &quot;POR&quot;, &quot;LINKSTARTUP&quot;]
+  },
+  &quot;reads&quot;: [&quot;WB_ENABLE_FLAG&quot;, &quot;write_record&quot;],
+  &quot;writes&quot;: [&quot;reset_type&quot;],
+  &quot;expected_result&quot;: null,
+  &quot;missing_fields&quot;: []
+}</code></pre>
+<p>常見 action_type：</p>
+<pre><code>TEST_UNIT_READY
+READ_CAPACITY
+READ_FLAG
+SET_FLAG
+CLEAR_FLAG
+READ_ATTRIBUTE
+WRITE_ATTRIBUTE
+WRITE10
+READ10_COMPARE
+RESET
+START_STOP_UNIT
+FFU
+SETUP
+CLEANUP
+ASSERT</code></pre>
+<p>PF010_0310 Flow 1 的 Step IR 概念：</p>
+<pre><code>[
+  {
+    &quot;step_id&quot;: &quot;1.1&quot;,
+    &quot;action_type&quot;: &quot;SET_FLAG&quot;,
+    &quot;target&quot;: &quot;fWriteBoosterEnable&quot;,
+    &quot;writes&quot;: [&quot;wb_enable_state&quot;]
+  },
+  {
+    &quot;step_id&quot;: &quot;1.2&quot;,
+    &quot;action_type&quot;: &quot;WRITE10_RANDOM&quot;,
+    &quot;target&quot;: &quot;selected_lun&quot;,
+    &quot;reads&quot;: [&quot;test_lun&quot;, &quot;lba_range&quot;, &quot;transfer_length&quot;],
+    &quot;writes&quot;: [&quot;write_record&quot;]
+  },
+  {
+    &quot;step_id&quot;: &quot;1.3&quot;,
+    &quot;action_type&quot;: &quot;READ10_COMPARE&quot;,
+    &quot;reads&quot;: [&quot;write_record&quot;]
+  },
+  {
+    &quot;step_id&quot;: &quot;1.4&quot;,
+    &quot;action_type&quot;: &quot;RESET_LOOP&quot;,
+    &quot;writes&quot;: [&quot;reset_type&quot;]
+  },
+  {
+    &quot;step_id&quot;: &quot;1.5&quot;,
+    &quot;action_type&quot;: &quot;READ_FLAG_EXPECT&quot;,
+    &quot;reads&quot;: [&quot;reset_type&quot;, &quot;wb_enable_state&quot;],
+    &quot;target&quot;: &quot;fWriteBoosterEnable&quot;
+  }
+]</code></pre>
+<hr>
+<h2 id="6-Step-4-State-Dependency-Graph">6. Step 4：State / Dependency Graph</h2>
+<h3>6.1 為什麼需要 dependency graph</h3>
+<p>Dependency graph 是避免「step 拆開後變數斷掉」的關鍵。</p>
+<p>它要回答：</p>
+<pre><code>哪個 step 產生變數？
+哪個 step 消耗變數？
+變數是 flow local 還是 global？
+如果某個 consumer 找不到 producer，是 blocker / TODO_REVIEW / default？</code></pre>
+<h3>6.2 PF010_0310 dependency graph 範例</h3>
+<p>Flow 1：</p>
+<pre><code>Step 1.1 SET FLAG
+  -&gt; produces wb_enable_state=1
+  -&gt; consumed by Step 1.5 expected value
+
+Step 1.2 random_write
+  -&gt; produces write_record
+  -&gt; consumed by Step 1.3 read/compare
+
+Step 1.4 reset loop
+  -&gt; produces reset_type
+  -&gt; consumed by _do_reset(reset_type)
+  -&gt; consumed by expected = _expected_volatile_flag_after_reset(reset_type)
+
+Step 1.5 read flag expected
+  -&gt; consumes expected
+  -&gt; consumes WB_ENABLE_FLAG</code></pre>
+<p>Flow 2：</p>
+<pre><code>Step 2.1 random_write
+  -&gt; produces write_record
+  -&gt; consumed by Step 2.3 random_read_compare
+
+Step 2.2 CLEAR FLAG
+  -&gt; produces wb_enable_state=0
+  -&gt; consumed by Step 2.5 expected value
+
+Step 2.4 reset loop
+  -&gt; produces reset_type
+  -&gt; consumed by _do_reset(reset_type)
+  -&gt; consumed by expected check</code></pre>
+<p>Flow 3：</p>
+<pre><code>Step 3.1 SET FLAG fWriteBoosterBufferFlushEn
+  -&gt; produces flush_enable_state=1
+
+Step 3.2 reset loop
+  -&gt; produces reset_type
+
+Step 3.3 READ FLAG expected
+  -&gt; consumes flush_enable_state
+  -&gt; consumes reset_type</code></pre>
+<h3>6.3 Dependency graph 在 code 裡的體現</h3>
+<p>Flow 1 code 應該長這樣，而不是把 reset 跟 expected 拆開：</p>
+<pre><code>for reset_type in self.RESET_SEQUENCE:
+    self._set_wb_enable()
+    self._random_write_and_compare(...)
+    self._do_reset(reset_type)
+    expected = self._expected_volatile_flag_after_reset(reset_type)
+    self._expect_flag(self.WB_ENABLE_FLAG, expected, ...)</code></pre>
+<p>這代表：</p>
+<pre><code>reset_type 同時進入 _do_reset() 和 expected computation。
+expected 不可以先在 flow 外部猜好。</code></pre>
+<hr>
+<h2 id="7-Step-5-LLM-Wiki-retrieval-的產物與先後順序">7. Step 5：LLM Wiki retrieval 的產物與先後順序</h2>
+<h3>7.1 LLM Wiki retrieval 什麼時候跑</h3>
+<p>LLM Wiki retrieval 不在一開始整份 TC 跑一次，而是在 Flow IR / Step IR 形成後，針對每個 flow 跑。</p>
+<p>順序：</p>
+<pre><code>Markdown parser
+  -&gt; Flow IR
+  -&gt; State/dependency graph
+  -&gt; 對每個 flow 建 query
+  -&gt; LLM Wiki retriever
+  -&gt; Knowledge Evidence IR</code></pre>
+<h3>7.2 LLM Wiki retriever 產生什麼</h3>
+<p>每個 query 會回傳 ranked chunks：</p>
+<pre><code>{
+  &quot;rank&quot;: 1,
+  &quot;chunk_id&quot;: &quot;llm_wiki/spec/ufs-writebooster-flags.md#chunk-002&quot;,
+  &quot;page_path&quot;: &quot;llm_wiki/spec/ufs-writebooster-flags.md&quot;,
+  &quot;title&quot;: &quot;UFS WriteBooster Flags&quot;,
+  &quot;source_type&quot;: &quot;Spec&quot;,
+  &quot;priority&quot;: 60,
+  &quot;authority&quot;: &quot;protocol-reference&quot;,
+  &quot;bm25_score&quot;: 39.35008513,
+  &quot;dense_score&quot;: 0.47573873,
+  &quot;rrf_score&quot;: 0.03252247,
+  &quot;text_preview&quot;: &quot;...&quot;
+}</code></pre>
+<h3>7.3 BM25 / Dense / RRF 的意義</h3>
+<pre><code>BM25:
+  lexical match，字面關鍵字命中。
+  例如 fWriteBoosterEnable、READ FLAG、RESET。
+
+Dense:
+  semantic similarity，語意接近。
+  例如 query 寫 WB enable reset，chunk 寫 WriteBooster volatile flag behavior。
+
+RRF:
+  reciprocal rank fusion，融合 BM25 rank 和 Dense rank。
+  用來得到較穩定的 relevance 排序。</code></pre>
+<h3>7.4 LLM Wiki ranking 是否就是最終權威順序？</h3>
+<p>不是。</p>
+<p>LLM Wiki 的 BM25 / Dense / RRF 只代表「相關度」，不是最終決策權威。</p>
+<p>最終要進 Decision Layer，再依 source priority 判斷。</p>
+<p>例如：</p>
+<pre><code>RRF 最高的是 Spec chunk。
+但如果 CustomerReq 明確 override Spec，最後 behavior 仍要以 CustomerReq 為主。
+
+RRF 找到 ModelDefault chunk。
+但如果 TC 已明確指定 expected value，不能用 ModelDefault 覆蓋 TC。</code></pre>
+<p>所以兩層順序不同：</p>
+<pre><code>Retrieval ranking:
+  BM25 / Dense / RRF -&gt; 找相關資料
+
+Decision priority:
+  TC / UserPrompt / CustomerReq / Spec / GitNexus / Project convention / ModelDefault -&gt; 決定採用什麼</code></pre>
+<h3>7.5 PF010_0310 每個 flow 的 LLM Wiki top hit</h3>
+<p>Flow 0 setup：</p>
+<pre><code>Top chunk: llm_wiki/spec/ufs-writebooster-attributes.md#chunk-002
+BM25: 53.08940303
+Dense: 0.52007652
+RRF: 0.03252247
+用途: dLUNumWriteBoosterBufferAllocUnits / WB attributes grounding</code></pre>
+<p>Flow 1 enable/reset：</p>
+<pre><code>Top chunk: llm_wiki/spec/ufs-writebooster-flags.md#chunk-002
+BM25: 39.35008513
+Dense: 0.47573873
+RRF: 0.03252247
+用途: fWriteBoosterEnable behavior / volatile flag expected state</code></pre>
+<p>Flow 2 disable/reset：</p>
+<pre><code>Top chunk: llm_wiki/spec/ufs-writebooster-flags.md#chunk-002
+BM25: 32.75155897
+Dense: 0.44914582
+RRF: 0.03252247
+用途: CLEAR FLAG / expected 0 behavior</code></pre>
+<p>Flow 3 flush/reset：</p>
+<pre><code>Top chunk: llm_wiki/spec/ufs-writebooster-flags.md#chunk-002
+BM25: 47.04568191
+Dense: 0.38197194
+RRF: 0.03252247
+用途: fWriteBoosterBufferFlushEn behavior</code></pre>
+<hr>
+<h2 id="8-Step-6-GitNexus-PyPPS-code-grounding">8. Step 6：GitNexus / PyPPS code grounding</h2>
+<h3>8.1 GitNexus 什麼時候跑</h3>
+<p>GitNexus / PyPPS code retrieval 在 Flow IR 形成後跑，和 LLM Wiki retrieval 是平行的 evidence source。</p>
+<p>順序上可以這樣：</p>
+<pre><code>Flow IR / Step IR
+  -&gt; Build code-intent queries
+  -&gt; GitNexus query/context/impact 或 direct code search
+  -&gt; Code Evidence IR</code></pre>
+<h3>8.2 GitNexus 回答什麼問題</h3>
+<p>GitNexus 不負責決定 spec expected behavior，它負責回答 implementation：</p>
+<pre><code>- PyPPS 有沒有這個 API？
+- function signature 是什麼？
+- enum name 是什麼？
+- sample code 通常怎麼用？
+- reset primitive 有哪些？
+- class Pattern 應該繼承誰？
+- UFSTC 的 step execution lifecycle 是什麼？</code></pre>
+<h3>8.3 PF010_0310 的 code grounding</h3>
+<p>目前 grounded references：</p>
+<pre><code>Pattern lifecycle:
+  /home/weikai/Script/pattern/pattern_template.py
+
+Query helpers:
+  /home/weikai/Script/api/ufs_api/attr_flag_functions.py
+  api.read_attribute(idn, index=0, selector=0)
+  api.write_attribute(idn, val, index=0, selector=0)
+  api.read_flag(idn, index=0, selector=0)
+  api.set_flag(idn, index=0, selector=0)
+  api.clear_flag(idn, index=0, selector=0)
+
+Random W/R helpers:
+  /home/weikai/Script/api/ufs_api/rw_functions.py
+  api.get_empty_write_record()
+  api.random_write(..., compare_method, write_record, fua=0)
+  api.random_read(..., write_record)
+  api.CompareMethod.HW_COMPARE
+
+START STOP UNIT:
+  /home/weikai/Script/api/cmd_seq/cmds.py
+  ExecuteCMD.StartStopUnit()
+  /home/weikai/Script/api/ufs_api/upiu/upiu.py
+  StartStopUnit.assign(lun, immed, power_condition, no_flush, start)
+
+Reset:
+  /home/weikai/Script/api/ufs_api/initial_device.py
+  api.init_tester_to_unit_ready(resetmode=api.Dcmd5ResetType.HW_RESET, powerdown=True)
+  api.init_tester_to_unit_ready(resetmode=api.Dcmd5ResetType.UNIPRO_RESET)</code></pre>
+<h3>8.4 GitNexus 發現衝突時怎麼辦</h3>
+<p>如果 TC / Spec 說有某個 IDN，但 PyPPS enum 不存在，不能硬寫假 enum。</p>
+<p>PF010_0310 例子：</p>
+<pre><code>TC says:
+  dLUNumWriteBoosterBufferAllocUnits IDN = 0x17
+
+PyPPS enum says:
+  AttributeIDN 0x17 = REF_CLK_GATING_WAIT_TIME
+  no exact dLUNumWriteBoosterBufferAllocUnits enum
+
+Decision:
+  do not write attribute
+  mark TODO_REVIEW in .py / assumptions.json / validation.json</code></pre>
+<p>另一個例子：</p>
+<pre><code>TC says:
+  LINKSTARTUP Reset
+
+PyPPS enum has:
+  HW_RESET
+  ENDPOINT_RESET
+  UNIPRO_RESET
+
+Decision:
+  use UNIPRO_RESET as closest mapping only with TODO_REVIEW
+  do not claim it is confirmed LINKSTARTUP_RESET</code></pre>
+<hr>
+<h2 id="9-Step-7-LLM-Model-的角色與限制">9. Step 7：LLM Model 的角色與限制</h2>
+<p>LLM model 的任務不是「用記憶直接寫 code」。</p>
+<p>LLM model 在流程中的角色：</p>
+<pre><code>1. Parse TC markdown into IR
+2. Detect flow boundaries
+3. Classify step action types
+4. Build state/dependency graph
+5. Generate retrieval queries
+6. Read LLM Wiki retrieval results
+7. Read GitNexus / code evidence
+8. Apply Decision Layer source priority
+9. Produce Flow Plan
+10. Generate Pattern IR
+11. Generate .py and artifacts
+12. Explain assumptions and TODO_REVIEW</code></pre>
+<p>LLM model 不能做的事：</p>
+<pre><code>- 不能憑空發明 PyPPS API
+- 不能把 Spec behavior 當作 implementation signature
+- 不能用 ModelDefault 補 core expected behavior
+- 不能因為 retrieval rank 高就直接覆蓋 TC
+- 不能 silently drop optional flow
+- 不能把 step-level code isolated generation 後再硬拼在一起</code></pre>
+<hr>
+<h2 id="10-Step-8-Decision-Layer-詳細順序">10. Step 8：Decision Layer 詳細順序</h2>
+<p>Decision Layer 會依照「要決定什麼」分成兩條 priority path。</p>
+<h3>10.1 Behavior / test intent priority</h3>
+<p>用於：</p>
+<pre><code>- expected value
+- pass/fail behavior
+- flag reset 後應該是 0 還是 1
+- 測項真正目的</code></pre>
+<p>優先順序：</p>
+<pre><code>1. TC explicit behavior
+2. UserPrompt explicit override / clarification
+3. CustomerReq project/customer behavior
+4. Spec protocol baseline from LLM Wiki
+5. ModelDefault fallback only if allowed</code></pre>
+<h3>10.2 Implementation detail priority</h3>
+<p>用於：</p>
+<pre><code>- PyPPS API
+- enum name
+- import style
+- random_write signature
+- reset primitive
+- loop count
+- compare method</code></pre>
+<p>優先順序：</p>
+<pre><code>1. TC explicit implementation detail
+2. UserPrompt implementation rule
+3. CustomerReq implementation-method
+4. GitNexus / /home/weikai/Script existing implementation
+5. Project convention
+6. ModelDefault fallback
+7. BLOCKER or TODO_REVIEW</code></pre>
+<h3>10.3 LLM Wiki / GitNexus / ModelDefault 如何互動</h3>
+<p>可以想成三種 evidence：</p>
+<pre><code>LLM Wiki Spec evidence:
+  behavior / protocol meaning
+
+GitNexus Code evidence:
+  implementation method / API reality
+
+ModelDefault evidence:
+  only fills safe missing implementation defaults</code></pre>
+<p>Decision Layer 合併時：</p>
+<pre><code>if TC explicitly says expected value:
+    use TC expected value
+    use LLM Wiki only to validate/explain
+elif CustomerReq overrides Spec:
+    use CustomerReq
+elif Spec gives protocol baseline:
+    use Spec
+elif ModelDefault allowed and field is safe default:
+    use ModelDefault and record assumption
+else:
+    BLOCKER or TODO_REVIEW</code></pre>
+<p>Implementation 則：</p>
+<pre><code>if GitNexus confirms API/enum:
+    use grounded PyPPS API
+elif TC gives numeric IDN but PyPPS enum missing:
+    numeric IDN may be used only with TODO_REVIEW if safe
+elif API is unknown or conflicts dangerously:
+    do not write fake API
+    emit TODO_REVIEW or BLOCKER</code></pre>
+<hr>
+<h2 id="10A-UserPrompt-與-ModelDefault-Priority-機制">10A. UserPrompt 與 ModelDefault Priority 機制</h2>
+<p>這一層是補充 Decision Layer 裡最容易混淆的兩個來源：</p>
+<pre><code>UserPrompt = 使用者在本次任務或專案中明確補充/覆寫的規則
+ModelDefault = 當前面來源都沒有提供時，允許自動補的安全預設值</code></pre>
+<p>它們不是同一種東西，priority 也完全不同。</p>
+<hr>
+<h3>10A.1 UserPrompt 是什麼</h3>
+<p>UserPrompt 指的是使用者明確給出的規則、限制、偏好或修正，可能出現在：</p>
+<pre><code>- 當前對話中的直接要求
+- project-local .hermes.md 中記錄的使用者規則
+- LLM Wiki 的 user-prompt 類頁面
+- 使用者明確說「這個 project 要這樣做」的規範</code></pre>
+<p>例子：</p>
+<pre><code>- 所有 size / LBA units 以 4K blocks 表示
+- 一個 TC 只輸出一個 Pattern .py
+- retrieval.md 必須保留 BM25 / Dense / RRF
+- 不可以 invent PyPPS API
+- flow-scoped retrieval + stateful flow-level generation
+- CustomerReq 與 Spec 衝突時，CustomerReq override Spec</code></pre>
+<p>UserPrompt 的定位：</p>
+<pre><code>UserPrompt 是 explicit instruction。
+如果它和 ModelDefault 衝突，UserPrompt 永遠優先。
+如果它和 Spec 衝突，要看衝突類型：
+  - workflow / implementation policy：UserPrompt 可優先
+  - protocol truth / device expected behavior：不能用 UserPrompt 任意改 spec，除非是明確 customer/project override，且要記錄</code></pre>
+<hr>
+<h3>10A.2 ModelDefault 是什麼</h3>
+<p>ModelDefault 是在缺少資訊時，用來讓 generation 可以繼續的安全預設值。</p>
+<p>ModelDefault 可以來自：</p>
+<pre><code>- llm_wiki/model-default/auto/*.md
+- 專案明確允許的 default policy
+- generator 內建但必須記錄的 fallback</code></pre>
+<p>ModelDefault 的定位：</p>
+<pre><code>ModelDefault 是最後階段 fallback，不是權威來源。
+它只能補「不改變核心測項意圖」的 implementation default。
+每次使用都必須寫進 assumptions.json。</code></pre>
+<p>允許用 ModelDefault 補的例子：</p>
+<pre><code>- random seed policy
+- cmd_count / burn_in_loop 的可覆寫預設值
+- compare method，例如 HW_COMPARE vs SW_COMPARE
+- reset coverage scheduling，例如 TC 列多個 reset 但沒說順序時，全部 deterministic cover
+- generated code style / helper method layout</code></pre>
+<p>不允許用 ModelDefault 補的例子：</p>
+<pre><code>- unknown expected value
+- missing flag/attribute IDN
+- unsupported reset primitive
+- nonexistent PyPPS API
+- TC 沒說但會改變 pass/fail intent 的 behavior</code></pre>
+<p>這些情況必須是：</p>
+<pre><code>TODO_REVIEW 或 BLOCKER</code></pre>
+<hr>
+<h3>10A.3 UserPrompt 與 ModelDefault 在 Behavior Priority 裡的位置</h3>
+<p>Behavior / test intent 指的是：</p>
+<pre><code>- expected value
+- pass/fail behavior
+- flag reset 後該是 0 還是 1
+- 測項目的
+- customer-specific behavior</code></pre>
+<p>Priority：</p>
+<pre><code>1. TC explicit behavior
+2. UserPrompt explicit override / clarification
+3. CustomerReq project/customer behavior
+4. Spec protocol baseline from LLM Wiki
+5. ModelDefault fallback only if allowed
+6. BLOCKER if behavior still unknown</code></pre>
+<p>意思是：</p>
+<pre><code>如果 TC 已經說 expected value，直接用 TC。
+如果使用者本次明確補充 expected rule，用 UserPrompt。
+如果 CustomerReq 有 customer behavior，用 CustomerReq。
+如果以上都沒有，才看 Spec。
+ModelDefault 幾乎不能補 expected value，除非這個 default 已被明確定義成安全 policy。</code></pre>
+<p>PF010_0310 例子：</p>
+<pre><code>field: expected_volatile_flag_after_reset
+value: SSU -&gt; 1, POR/LINKSTARTUP -&gt; 0
+source: TC + LLM Wiki WriteBooster flags/reset pages
+category: SOFT_ASSUMPTION
+scope: flow_1, flow_3</code></pre>
+<p>這不是單純 ModelDefault；它是 TC intent + LLM Wiki spec grounding，再記成 flow-scoped assumption，因為 reset primitive mapping 仍有 TODO_REVIEW。</p>
+<hr>
+<h3>10A.4 UserPrompt 與 ModelDefault 在 Implementation Priority 裡的位置</h3>
+<p>Implementation detail 指的是：</p>
+<pre><code>- PyPPS API
+- enum name / numeric IDN
+- reset primitive mapping
+- import style
+- helper function signature
+- loop count
+- compare method
+- generated code style</code></pre>
+<p>Priority：</p>
+<pre><code>1. TC explicit implementation detail
+2. UserPrompt implementation rule
+3. CustomerReq implementation-method
+4. GitNexus / /home/weikai/Script existing implementation
+5. Project convention
+6. ModelDefault fallback
+7. TODO_REVIEW or BLOCKER</code></pre>
+<p>意思是：</p>
+<pre><code>如果 TC 寫明 API 或 IDN，先採用，但仍要用 GitNexus 驗證 PyPPS 是否支援。
+如果 UserPrompt 說 project 一律用某種 style / unit / output layout，要採用。
+如果 GitNexus 找不到 API，不能用 ModelDefault 發明 API。
+ModelDefault 只能補安全 implementation detail，例如 seed、cmd_count、compare method。</code></pre>
+<p>PF010_0310 例子：</p>
+<pre><code>compare_method:
+  TC: Data Match, 未指定 HW/SW compare
+  GitNexus: sample code 有 api.CompareMethod.HW_COMPARE
+  ModelDefault: default compare method 可用 HW_COMPARE
+  Decision: 使用 api.CompareMethod.HW_COMPARE，記 SOFT_ASSUMPTION
+
+random_seed:
+  TC: 未指定
+  UserPrompt/Project: 需要可 trace / deterministic
+  ModelDefault: seed policy
+  Decision: seed=310，可由 tcsargs override，記 SOFT_ASSUMPTION
+
+transfer_length_units:
+  UserPrompt/Project: 所有 size/LBA units 以 4K blocks 表示
+  Decision: 這是 HARD_DEFAULT / project decision，不讓 ModelDefault 另行猜測</code></pre>
+<hr>
+<h3>10A.5 Priority 機制的 pseudo-code</h3>
+<p>Behavior decision：</p>
+<pre><code>def decide_behavior(field, tc, user_prompt, customer_req, llm_wiki, model_default):
+    if tc.has_explicit_behavior(field):
+        return Decision(value=tc.value(field), source=&quot;TC&quot;, category=&quot;GROUNDED&quot;)
+
+    if user_prompt.has_explicit_override(field):
+        return Decision(value=user_prompt.value(field), source=&quot;UserPrompt&quot;, category=&quot;GROUNDED&quot;)
+
+    if customer_req.has_behavior(field):
+        return Decision(value=customer_req.value(field), source=&quot;CustomerReq&quot;, category=&quot;GROUNDED&quot;)
+
+    if llm_wiki.spec_has_baseline(field):
+        return Decision(value=llm_wiki.spec_value(field), source=&quot;Spec&quot;, category=&quot;GROUNDED&quot;)
+
+    if model_default.allowed_for_behavior(field):
+        return Decision(value=model_default.value(field), source=&quot;ModelDefault&quot;, category=&quot;SOFT_ASSUMPTION&quot;)
+
+    return Decision(value=None, source=None, category=&quot;BLOCKER&quot;)</code></pre>
+<p>Implementation decision：</p>
+<pre><code>def decide_implementation(field, tc, user_prompt, customer_req, gitnexus, project, model_default):
+    if tc.has_explicit_implementation(field):
+        candidate = tc.value(field)
+        if gitnexus.can_confirm(candidate):
+            return Decision(value=candidate, source=&quot;TC+GitNexus&quot;, category=&quot;GROUNDED&quot;)
+        return Decision(value=candidate, source=&quot;TC&quot;, category=&quot;TODO_REVIEW&quot;)
+
+    if user_prompt.has_implementation_rule(field):
+        return Decision(value=user_prompt.value(field), source=&quot;UserPrompt&quot;, category=&quot;GROUNDED&quot;)
+
+    if customer_req.has_implementation_method(field):
+        return Decision(value=customer_req.value(field), source=&quot;CustomerReq&quot;, category=&quot;GROUNDED&quot;)
+
+    if gitnexus.has_supported_api(field):
+        return Decision(value=gitnexus.api(field), source=&quot;GitNexus&quot;, category=&quot;GROUNDED&quot;)
+
+    if project.has_convention(field):
+        return Decision(value=project.value(field), source=&quot;ProjectConvention&quot;, category=&quot;HARD_DEFAULT&quot;)
+
+    if model_default.allowed_for_implementation(field):
+        return Decision(value=model_default.value(field), source=&quot;ModelDefault&quot;, category=&quot;SOFT_ASSUMPTION&quot;)
+
+    return Decision(value=None, source=None, category=&quot;TODO_REVIEW&quot;)</code></pre>
+<hr>
+<h3>10A.6 PF010_0310 的實際 priority examples</h3>
+<pre class="table-as-code"><code>| Decision field | Type | TC | UserPrompt / Project | LLM Wiki | GitNexus / PyPPS | ModelDefault | Final |</code></pre>
+<pre class="table-as-code"><code>|---|---|---|---|---|---|---|---|</code></pre>
+<pre class="table-as-code"><code>| output layout | implementation policy | one TC | generated/&lt;PatternName&gt;/ | n/a | n/a | n/a | UserPrompt / project rule |</code></pre>
+<pre class="table-as-code"><code>| generation granularity | workflow policy | n/a | flow-scoped + stateful | n/a | n/a | n/a | UserPrompt / project rule |</code></pre>
+<pre class="table-as-code"><code>| BM25/Dense/RRF recording | artifact policy | n/a | must record scores | retriever provides scores | n/a | n/a | UserPrompt / project rule |</code></pre>
+<pre class="table-as-code"><code>| compare_method | implementation detail | Data Match only | n/a | n/a | HW_COMPARE exists in sample/API | allowed fallback | HW_COMPARE + SOFT_ASSUMPTION |</code></pre>
+<pre class="table-as-code"><code>| random_seed | implementation detail | not specified | traceability desired | model-default page | n/a | seed policy | 310 + SOFT_ASSUMPTION |</code></pre>
+<pre class="table-as-code"><code>| transfer unit | implementation policy | not fully specified | all size/LBA units use 4K blocks | n/a | n/a | n/a | HARD_DEFAULT project decision |</code></pre>
+<pre class="table-as-code"><code>| dLUNumWriteBoosterBufferAllocUnits | implementation/API | IDN 0x17 in TC | no fake API | attribute concept exists | PyPPS enum conflict | not allowed | TODO_REVIEW, do not write |</code></pre>
+<pre class="table-as-code"><code>| fWriteBoosterSupport enum | implementation/API | IDN 0x15 in TC | no fake enum | support flag concept exists | enum name missing | not allowed | numeric 0x15 + TODO_REVIEW |</code></pre>
+<pre class="table-as-code"><code>| LINKSTARTUP reset | implementation/API | LINKSTARTUP listed | no fake primitive | reset concept exists | no LINKSTARTUP_RESET enum | not allowed | UNIPRO_RESET mapping + TODO_REVIEW |</code></pre>
+<hr>
+<h3>10A.7 assumptions.json 如何記錄 priority 結果</h3>
+<p>只要用了 ModelDefault、Project convention fallback、或有 unresolved mapping，都必須記錄。</p>
+<p>格式重點：</p>
+<pre><code>{
+  &quot;id&quot;: &quot;A001&quot;,
+  &quot;scope&quot;: &quot;flow_1&quot;,
+  &quot;category&quot;: &quot;SOFT_ASSUMPTION&quot;,
+  &quot;field&quot;: &quot;compare_method&quot;,
+  &quot;value&quot;: &quot;api.CompareMethod.HW_COMPARE&quot;,
+  &quot;source&quot;: &quot;GitNexus sample + ModelDefault default-compare-method&quot;,
+  &quot;depends_on&quot;: [&quot;flow_1.write_record&quot;, &quot;flow_1.READ_COMPARE&quot;],
+  &quot;reason&quot;: &quot;TC says Data Match but does not specify HW vs SW compare.&quot;
+}</code></pre>
+<p>Category 建議：</p>
+<pre><code>GROUNDED:
+  完全由 TC/UserPrompt/CustomerReq/GitNexus/Spec 支撐，通常不需要放 assumptions。
+
+HARD_DEFAULT:
+  project 明確固定規則，例如 4K blocks。
+
+SOFT_ASSUMPTION:
+  可自動接受但要記錄，例如 seed/cmd_count/compare_method。
+
+TODO_REVIEW:
+  有暫時處理方式但需要人確認，例如 LINKSTARTUP -&gt; UNIPRO_RESET。
+
+BLOCKER:
+  核心 expected behavior 或必要 API 無法安全推導，不能生成可執行邏輯。</code></pre>
+<hr>
+<h3>10A.8 Decision Layer 的防呆規則</h3>
+<pre><code>1. UserPrompt 永遠高於 ModelDefault。
+2. ModelDefault 不能覆蓋 TC explicit behavior。
+3. ModelDefault 不能發明 PyPPS API / enum / reset primitive。
+4. GitNexus code evidence 優先於 ModelDefault implementation guess。
+5. LLM Wiki retrieval ranking 只代表 relevance，不代表 priority。
+6. CustomerReq 如果是明確 customer behavior，可以 override generic Spec。
+7. 所有 ModelDefault / TODO_REVIEW / BLOCKER 都要 flow-scoped 記錄。</code></pre>
+<hr>
+<h2 id="11-Step-9-Flow-Plan">11. Step 9：Flow Plan</h2>
+<p>Decision Layer 的結果不是直接 code，而是 Flow Plan。</p>
+<p>Flow Plan 範例：</p>
+<pre><code>{
+  &quot;flow_id&quot;: &quot;flow_1_enable_reset&quot;,
+  &quot;method&quot;: &quot;step2&quot;,
+  &quot;tc_steps&quot;: [&quot;1.1&quot;, &quot;1.2&quot;, &quot;1.3&quot;, &quot;1.4&quot;, &quot;1.5&quot;],
+  &quot;ordered_operations&quot;: [
+    &quot;set WB_ENABLE_FLAG&quot;,
+    &quot;read flag and assert 1&quot;,
+    &quot;random_write with write_record&quot;,
+    &quot;for reset_type in RESET_SEQUENCE&quot;,
+    &quot;  set WB_ENABLE_FLAG&quot;,
+    &quot;  random_write with compare&quot;,
+    &quot;  do reset(reset_type)&quot;,
+    &quot;  expected = expected_after_reset(reset_type)&quot;,
+    &quot;  read flag and assert expected&quot;
+  ],
+  &quot;dependencies&quot;: [
+    {
+      &quot;producer&quot;: &quot;random_write&quot;,
+      &quot;consumer&quot;: &quot;read_compare&quot;,
+      &quot;variable&quot;: &quot;write_record&quot;
+    },
+    {
+      &quot;producer&quot;: &quot;reset loop&quot;,
+      &quot;consumer&quot;: &quot;expected computation&quot;,
+      &quot;variable&quot;: &quot;reset_type&quot;
+    }
+  ],
+  &quot;todo_review&quot;: [&quot;LINKSTARTUP mapped to UNIPRO_RESET&quot;]
+}</code></pre>
+<p>Flow Plan 的功能：</p>
+<pre><code>- 讓 code generation 不是直接從 raw TC 跳到 Python
+- 讓 dependency 可以先被 reviewer / validation 看見
+- 讓 assumptions 可以 flow-scoped
+- 讓 retrieval references 可以掛到 flow / operation</code></pre>
+<hr>
+<h2 id="12-Step-10-Pattern-IR-與-code-generation">12. Step 10：Pattern IR 與 code generation</h2>
+<h3>12.1 Pattern IR</h3>
+<p>所有 Flow Plan 合併成 Pattern IR：</p>
+<pre><code>{
+  &quot;class_name&quot;: &quot;Pattern&quot;,
+  &quot;base_class&quot;: &quot;UFSTC&quot;,
+  &quot;imports&quot;: [
+    &quot;package_root&quot;,
+    &quot;from Script import api&quot;,
+    &quot;from Script.api import shared&quot;,
+    &quot;from Script.api import cmd_seq as ExecuteCMD&quot;,
+    &quot;from Script.pattern.pattern_template import UFSTC&quot;
+  ],
+  &quot;constants&quot;: [
+    &quot;WB_ENABLE_FLAG&quot;,
+    &quot;WB_FLUSH_ENABLE_FLAG&quot;,
+    &quot;WB_SUPPORT_FLAG_IDN&quot;,
+    &quot;RESET_SEQUENCE&quot;
+  ],
+  &quot;methods&quot;: [
+    &quot;pre_process&quot;,
+    &quot;is_support&quot;,
+    &quot;step1&quot;,
+    &quot;step2&quot;,
+    &quot;step3&quot;,
+    &quot;step4&quot;,
+    &quot;post_process&quot;
+  ]
+}</code></pre>
+<h3>12.2 Code generation 規則</h3>
+<pre><code>- one flow -&gt; usually one step&lt;number&gt;() method
+- helper method 可以共用，但不可讓 helper 切斷 flow dependency
+- reset helper 和 expected computation 必須在同一 flow plan 中被呼叫
+- TODO_REVIEW 要寫在 code comment / warning / assumptions / validation
+- 不確定的 API 不要硬寫</code></pre>
+<p>PF010_0310 產出的 method mapping：</p>
+<pre><code>pre_process:
+  global state setup: seed, burn_in_loop, cmd_count, write_record, test_lun
+
+step1:
+  flow_0_setup
+
+_maybe_ffu_flow_checkpoint:
+  flow_x_ffu disabled placeholder
+
+step2:
+  flow_1_enable_reset
+
+step3:
+  flow_2_disable_reset
+
+step4:
+  flow_3_flush_reset
+
+post_process:
+  cleanup flags</code></pre>
+<hr>
+<h2 id="13-Step-11-Artifacts-產生">13. Step 11：Artifacts 產生</h2>
+<h3>13.1 retrieval.md</h3>
+<p>retrieval.md 要回答：</p>
+<pre><code>每個 flow 查了什麼？
+LLM Wiki top chunks 是什麼？
+BM25 / Dense / RRF 分數是多少？
+PyPPS code reference 是哪個 file / line？
+每個 flow 的 state dependencies 是什麼？
+決策原因是什麼？</code></pre>
+<p>PF010_0310 的 retrieval.md 現在是 flow-scoped：</p>
+<pre><code>Flow 0: setup
+Flow X: FFU checkpoint
+Flow 1: enable reset
+Flow 2: disable reset
+Flow 3: flush reset</code></pre>
+<p>每個 flow 都有：</p>
+<pre><code>- TC steps
+- generated method
+- decision summary
+- ordered step/state dependencies
+- Knowledge References table with BM25/Dense/RRF</code></pre>
+<h3>13.2 assumptions.json</h3>
+<p>assumptions.json 要回答：</p>
+<pre><code>哪些值不是 TC 明確給的？
+是 ModelDefault 還是 TODO_REVIEW？
+影響哪個 flow？
+依賴哪些 state？
+為什麼可以/不可以自動接受？</code></pre>
+<p>每筆 assumption 必須有：</p>
+<pre><code>{
+  &quot;id&quot;: &quot;A001&quot;,
+  &quot;scope&quot;: &quot;flow_1&quot;,
+  &quot;category&quot;: &quot;SOFT_ASSUMPTION&quot;,
+  &quot;field&quot;: &quot;compare_method&quot;,
+  &quot;value&quot;: &quot;api.CompareMethod.HW_COMPARE&quot;,
+  &quot;source&quot;: &quot;...&quot;,
+  &quot;depends_on&quot;: [&quot;flow_1.write_record&quot;],
+  &quot;reason&quot;: &quot;...&quot;
+}</code></pre>
+<h3>13.3 validation.json</h3>
+<p>validation.json 要回答：</p>
+<pre><code>code 語法是否 OK？
+class Pattern 是否存在？
+required methods 是否存在？
+每個 flow 是否 covered？
+每個 dependency 是否有 producer？
+optional flow 是否被 represented？
+TODO_REVIEW / blockers 是什麼？</code></pre>
+<p>PF010_0310 目前：</p>
+<pre><code>syntax_check.ok = true
+class_Pattern_found = true
+required_methods_present = true
+blockers = []
+unresolved_todo_review = 4 items</code></pre>
+<hr>
+<h2 id="14-Step-12-Validation-詳細流程">14. Step 12：Validation 詳細流程</h2>
+<p>Validation 分多層：</p>
+<h3>14.1 Syntax validation</h3>
+<pre><code>python3 -m py_compile generated/PF010_0310-Normalize/PF010_0310_Normalize.py</code></pre>
+<p>目的：確認 Python 語法正確。</p>
+<h3>14.2 AST structure validation</h3>
+<p>檢查：</p>
+<pre><code>- class Pattern exists
+- pre_process exists
+- is_support exists
+- step1 / step2 / step3 / step4 exist
+- post_process exists
+- run = Pattern().run exists</code></pre>
+<h3>14.3 Flow coverage validation</h3>
+<p>檢查每個 Flow IR 是否有對應 method：</p>
+<pre><code>flow_0_setup -&gt; step1
+flow_x_ffu -&gt; _maybe_ffu_flow_checkpoint
+flow_1_enable_reset -&gt; step2
+flow_2_disable_reset -&gt; step3
+flow_3_flush_reset -&gt; step4</code></pre>
+<h3>14.4 Dependency validation</h3>
+<p>檢查每個 consumer 是否有 producer：</p>
+<pre><code>flow_1.write_record:
+  producer = random_write
+  consumer = compare/read helper
+
+flow_1.reset_type:
+  producer = RESET_SEQUENCE loop
+  consumer = _do_reset + expected computation
+
+flow_2.wb_enable_state:
+  producer = CLEAR FLAG
+  consumer = expected 0 check
+
+flow_3.flush_enable_state:
+  producer = SET FLAG
+  consumer = post-reset flag check</code></pre>
+<h3>14.5 TODO_REVIEW / blocker validation</h3>
+<p>檢查所有 unresolved item 是否記錄在：</p>
+<pre><code>.py comment / warning
+assumptions.json
+validation.json
+retrieval.md decision notes</code></pre>
+<p>PF010_0310 目前 TODO_REVIEW：</p>
+<pre><code>1. dLUNumWriteBoosterBufferAllocUnits API/IDN mapping
+2. fWriteBoosterSupport enum missing
+3. LINKSTARTUP mapped to UNIPRO_RESET
+4. FFU flow details missing / disabled placeholder</code></pre>
+<hr>
+<h2 id="15-互動順序-LLM-Wiki-GitNexus-LLM-model">15. 互動順序：LLM Wiki、GitNexus、LLM model</h2>
+<p>最重要的互動順序可以寫成：</p>
+<pre><code>LLM model parses TC
+  -&gt; produces Flow IR and Step IR
+
+For each flow:
+  LLM model builds retrieval query from Flow IR / Step IR / dependency graph
+
+  LLM Wiki retriever returns ranked knowledge chunks
+    -&gt; BM25 / Dense / RRF
+    -&gt; source_type / priority / authority
+    -&gt; text preview
+
+  GitNexus/code search returns code evidence
+    -&gt; API names
+    -&gt; function signatures
+    -&gt; enum names/values
+    -&gt; sample usage
+    -&gt; line references
+
+  LLM model normalizes both into Evidence IR
+    -&gt; KnowledgeEvidence
+    -&gt; CodeEvidence
+    -&gt; ModelDefaultEvidence
+
+  Decision Layer resolves each decision field
+    -&gt; behavior decisions use behavior priority
+    -&gt; implementation decisions use implementation priority
+    -&gt; conflicts become TODO_REVIEW or BLOCKER
+
+  LLM model creates Flow Plan
+    -&gt; ordered operations
+    -&gt; state dependencies
+    -&gt; assumptions
+    -&gt; TODO_REVIEW
+
+After all flows:
+  LLM model assembles Pattern IR
+  LLM model generates .py
+  LLM model generates retrieval.md / assumptions.json / validation.json
+  validation tools verify syntax/structure/coverage/dependencies</code></pre>
+<p>簡圖：</p>
+<pre><code>                 +-------------------+
+                 |   TC markdown     |
+                 +---------+---------+
+                           |
+                           v
+                 +-------------------+
+                 | LLM model parser  |
+                 | TC/Flow/Step IR   |
+                 +---------+---------+
+                           |
+                           v
+                 +-------------------+
+                 | Dependency Graph  |
+                 +----+---------+----+
+                      |         |
+                      v         v
+        +----------------+   +---------------------+
+        |   LLM Wiki     |   | GitNexus / PyPPS    |
+        | BM25/Dense/RRF |   | API / enum / sample |
+        +--------+-------+   +----------+----------+
+                 \                  /
+                  \                /
+                   v              v
+                +----------------------+
+                |   Evidence IR        |
+                +----------+-----------+
+                           |
+                           v
+                +----------------------+
+                | Decision Layer       |
+                | source priority      |
+                +----------+-----------+
+                           |
+                           v
+                +----------------------+
+                | Flow Plan            |
+                | stateful generation  |
+                +----------+-----------+
+                           |
+                           v
+                +----------------------+
+                | Pattern IR / .py     |
+                +----------+-----------+
+                           |
+                           v
+                +----------------------+
+                | validation artifacts |
+                +----------------------+</code></pre>
+<hr>
+<h2 id="16-PF010-0310-實際例子-Flow-1-完整路徑">16. PF010_0310 實際例子：Flow 1 完整路徑</h2>
+<h3>16.1 TC side</h3>
+<p>Flow 1 的 TC intent：</p>
+<pre><code>SET fWriteBoosterEnable
+random WRITE / READ compare
+做 SSU / POR / LINKSTARTUP reset
+reset 後 read fWriteBoosterEnable and compare expected value</code></pre>
+<h3>16.2 IR side</h3>
+<pre><code>{
+  &quot;flow_id&quot;: &quot;flow_1_enable_reset&quot;,
+  &quot;method&quot;: &quot;step2&quot;,
+  &quot;steps&quot;: [&quot;1.1&quot;, &quot;1.2&quot;, &quot;1.3&quot;, &quot;1.4&quot;, &quot;1.5&quot;],
+  &quot;dependencies&quot;: [
+    &quot;SET FLAG produces wb_enable_state&quot;,
+    &quot;random_write produces write_record&quot;,
+    &quot;read_compare consumes write_record&quot;,
+    &quot;reset loop produces reset_type&quot;,
+    &quot;expected flag value consumes reset_type&quot;
+  ]
+}</code></pre>
+<h3>16.3 LLM Wiki side</h3>
+<p>Flow 1 retrieval query：</p>
+<pre><code>PF010_0310 Phase 1 Write Booster Enable SET FLAG fWriteBoosterEnable WRITE10 READ10 compare SSU POR LINKSTARTUP reset expected flag</code></pre>
+<p>Top chunks：</p>
+<pre><code>1. ufs-writebooster-flags.md#chunk-002
+2. ufs-reset-and-start-stop-unit.md#chunk-002
+3. ufs-query-interface.md#chunk-002
+4. scsi-write-read-10.md#chunk-002</code></pre>
+<p>用途：</p>
+<pre><code>WriteBooster flag behavior
+reset behavior context
+Query SET/READ FLAG semantics
+WRITE(10)/READ(10) compare context</code></pre>
+<h3>16.4 GitNexus side</h3>
+<p>Code grounding：</p>
+<pre><code>api.set_flag(idn=...)
+api.read_flag(idn=...)
+api.random_write(... write_record ...)
+api.random_read(... write_record ...)
+api.init_tester_to_unit_ready(resetmode=...)
+ExecuteCMD.StartStopUnit()</code></pre>
+<h3>16.5 Decision Layer side</h3>
+<p>Decision：</p>
+<pre><code>WB_ENABLE_FLAG implementation:
+  use api.FlagIDN.WRITEBOOSTER_EN
+  source: PyPPS enum
+
+compare_method:
+  use api.CompareMethod.HW_COMPARE
+  source: PyPPS sample + ModelDefault assumption
+
+reset sequence:
+  use SSU, POR, LINKSTARTUP
+  source: TC + default deterministic coverage
+
+LINKSTARTUP implementation:
+  use api.Dcmd5ResetType.UNIPRO_RESET with TODO_REVIEW
+  source: PyPPS enum lacks explicit LINKSTARTUP_RESET
+
+expected value:
+  expected = 1 if reset_type == SSU else 0
+  source: TC / LLM Wiki WriteBooster flag volatile behavior</code></pre>
+<h3>16.6 Generated code side</h3>
+<pre><code>for reset_type in self.RESET_SEQUENCE:
+    self.flow_state[flow][&quot;last_reset_type&quot;] = reset_type
+    self._set_wb_enable()
+    self._random_write_and_compare(f&quot;Flow 1 loop {loop_idx}: before {reset_type}&quot;)
+    self._do_reset(reset_type)
+    expected = self._expected_volatile_flag_after_reset(reset_type)
+    self.flow_state[flow][&quot;expected_wb_enable&quot;] = expected
+    self._expect_flag(self.WB_ENABLE_FLAG, expected, f&quot;Flow 1 after {reset_type} reset&quot;)</code></pre>
+<p>這就是 flow-level stateful generation 的核心：</p>
+<pre><code>reset_type 沒有離開 flow。
+expected 沒有在外部被猜好。
+write_record 沒有被 step-level generation 切斷。</code></pre>
+<hr>
+<h2 id="17-最後輸出物">17. 最後輸出物</h2>
+<p>對一個 TC，至少輸出：</p>
+<pre><code>generated/&lt;PatternName&gt;/&lt;PatternNamePythonSafe&gt;.py
+generated/&lt;PatternName&gt;/&lt;PatternNamePythonSafe&gt;.retrieval.md
+generated/&lt;PatternName&gt;/&lt;PatternNamePythonSafe&gt;.assumptions.json
+generated/&lt;PatternName&gt;/&lt;PatternNamePythonSafe&gt;.validation.json</code></pre>
+<p>PF010_0310 目前輸出：</p>
+<pre><code>/home/weikai/AgentGeneratePypps/generated/PF010_0310-Normalize/PF010_0310_Normalize.py
+/home/weikai/AgentGeneratePypps/generated/PF010_0310-Normalize/PF010_0310_Normalize.retrieval.md
+/home/weikai/AgentGeneratePypps/generated/PF010_0310-Normalize/PF010_0310_Normalize.assumptions.json
+/home/weikai/AgentGeneratePypps/generated/PF010_0310-Normalize/PF010_0310_Normalize.validation.json
+/home/weikai/AgentGeneratePypps/generated/PF010_0310-Normalize/PF010_0310_Pattern_Generation_Report.html
+/home/weikai/AgentGeneratePypps/generated/PF010_0310-Normalize/PF010_0310_Detailed_Generation_Flow.md</code></pre>
+<hr>
+<h2 id="18-總結">18. 總結</h2>
+<p>這套方法的重點不是「讓 LLM 一次把 code 寫出來」，而是把 LLM 放在一個可追蹤的 pipeline 裡：</p>
+<pre><code>TC -&gt; IR -&gt; flow/state dependency -&gt; retrieval -&gt; evidence -&gt; decision -&gt; flow plan -&gt; Pattern IR -&gt; code -&gt; validation</code></pre>
+<p>最重要的三個防呆：</p>
+<pre><code>1. 不整份 TC 一次 broad generation。
+2. 不做 isolated step-level code generation。
+3. 任何 unsupported API / missing enum / ambiguous reset mapping 都必須 TODO_REVIEW 或 BLOCKER。</code></pre>
+<p>最後的設計目標：</p>
+<pre><code>產生的 Pattern 不只是能跑的 .py，還要能說清楚：
+- 每個 flow 為什麼這樣寫
+- 每個 expected value 從哪裡來
+- 每個 API 從哪個 PyPPS code reference 來
+- 每個 fallback / TODO_REVIEW 影響哪個 flow 和哪個 dependency</code></pre><div class="note">Generated from <code>/home/weikai/AgentGeneratePypps/generated/PF010_0310-Normalize/PF010_0310_Detailed_Generation_Flow.md</code>. This HTML is self-contained and has no external network dependency.</div></article></main></div></body></html>

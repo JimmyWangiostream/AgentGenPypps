@@ -1,0 +1,154 @@
+{
+  "pattern_name": "PF010_0310-Normalize",
+  "generated_at": "2026-06-14T18:46:47.326608+00:00",
+  "generation_model": "flow_scoped_retrieval_stateful_flow_level_generation",
+  "status": "generated_syntax_ok_with_todo_review",
+  "flow_coverage": {
+    "flow_0_setup": {
+      "tc_steps": [
+        "0.1",
+        "0.2",
+        "0.3",
+        "0.4"
+      ],
+      "method": "step1",
+      "status": "covered_with_todo_review",
+      "todo_review": [
+        "dLUNumWriteBoosterBufferAllocUnits API/IDN mapping",
+        "fWriteBoosterSupport enum missing"
+      ]
+    },
+    "flow_x_ffu": {
+      "tc_steps": [
+        "X.1",
+        "X.2",
+        "X.3"
+      ],
+      "method": "_maybe_ffu_flow_checkpoint",
+      "status": "represented_disabled_todo_review",
+      "todo_review": [
+        "FFU firmware path/version/trigger missing"
+      ]
+    },
+    "flow_1_enable_reset": {
+      "tc_steps": [
+        "1.1",
+        "1.2",
+        "1.3",
+        "1.4",
+        "1.5"
+      ],
+      "method": "step2",
+      "status": "covered_with_state_dependencies",
+      "todo_review": [
+        "LINKSTARTUP mapped to UNIPRO_RESET"
+      ]
+    },
+    "flow_2_disable_reset": {
+      "tc_steps": [
+        "2.1",
+        "2.2",
+        "2.3",
+        "2.4",
+        "2.5"
+      ],
+      "method": "step3",
+      "status": "covered_with_state_dependencies",
+      "todo_review": [
+        "LINKSTARTUP mapped to UNIPRO_RESET"
+      ]
+    },
+    "flow_3_flush_reset": {
+      "tc_steps": [
+        "3.1",
+        "3.2",
+        "3.3"
+      ],
+      "method": "step4",
+      "status": "covered_with_state_dependencies",
+      "todo_review": [
+        "LINKSTARTUP mapped to UNIPRO_RESET"
+      ]
+    }
+  },
+  "dependency_check": {
+    "global": {
+      "ok": true,
+      "variables": [
+        "test_lun",
+        "write_record",
+        "seed",
+        "transfer_length_blocks"
+      ]
+    },
+    "flow_1_enable_reset": {
+      "ok": true,
+      "dependencies": {
+        "write_record": "produced by random_write and consumed by compare/read helpers",
+        "reset_type": "produced by RESET_SEQUENCE loop and consumed by _do_reset + expected computation",
+        "expected": "computed immediately from reset_type"
+      }
+    },
+    "flow_2_disable_reset": {
+      "ok": true,
+      "dependencies": {
+        "write_record": "produced by random_write before random_read compare",
+        "wb_enable_state": "CLEAR FLAG before reset and expected 0 after reset",
+        "reset_type": "produced and consumed in same flow loop"
+      }
+    },
+    "flow_3_flush_reset": {
+      "ok": true,
+      "dependencies": {
+        "flush_enable_state": "SET FLAG before reset",
+        "reset_type": "drives reset primitive and expected flush flag value"
+      }
+    }
+  },
+  "unresolved_todo_review": [
+    "dLUNumWriteBoosterBufferAllocUnits API/IDN mapping",
+    "fWriteBoosterSupport enum missing",
+    "LINKSTARTUP mapped to UNIPRO_RESET",
+    "FFU flow details missing/disabled"
+  ],
+  "blockers": [],
+  "syntax_check": {
+    "command": "python3 -m py_compile generated/PF010_0310-Normalize/PF010_0310_Normalize.py",
+    "ok": true,
+    "stdout_stderr": ""
+  },
+  "structure_check": {
+    "class_Pattern_found": true,
+    "required_methods_present": true,
+    "methods": [
+      "pre_process",
+      "is_support",
+      "step1",
+      "step2",
+      "step3",
+      "step4",
+      "post_process",
+      "_maybe_ffu_flow_checkpoint",
+      "_pick_max_capacity_enabled_lun",
+      "_lba_range",
+      "_set_wb_enable",
+      "_clear_wb_enable",
+      "_expect_flag",
+      "_random_write_and_compare",
+      "_random_read_compare",
+      "_expected_volatile_flag_after_reset",
+      "_do_reset",
+      "_ssu_sleep_active"
+    ],
+    "run_assignment_found": true
+  },
+  "html_report_check": {
+    "exists": true,
+    "contains_flow_scoped": true,
+    "contains_stateful": true,
+    "contains_pf010": true,
+    "contains_bm25_dense_rrf": true,
+    "contains_todo_review": true,
+    "no_external_http_refs": true
+  }
+}

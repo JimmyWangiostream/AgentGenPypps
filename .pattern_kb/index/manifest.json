@@ -1,0 +1,219 @@
+{
+  "generated_at": "2026-06-14T23:48:37+08:00",
+  "wiki_root": "llm_wiki",
+  "pages": [
+    {
+      "path": "llm_wiki/README.md",
+      "title": "LLM Wiki for AgentGeneratePypps",
+      "source_type": "GenerationPolicy",
+      "priority": "100",
+      "authority": "policy"
+    },
+    {
+      "path": "llm_wiki/SCHEMA.md",
+      "title": "LLM Wiki Schema",
+      "source_type": "GenerationPolicy",
+      "priority": "100",
+      "authority": "policy"
+    },
+    {
+      "path": "llm_wiki/SOURCE_PRIORITY.md",
+      "title": "Source Priority and Decision Paths",
+      "source_type": "GenerationPolicy",
+      "priority": "100",
+      "authority": "policy"
+    },
+    {
+      "path": "llm_wiki/customer-req/README.md",
+      "title": "CustomerReq Source Area",
+      "source_type": "GenerationPolicy",
+      "priority": "100",
+      "authority": "policy"
+    },
+    {
+      "path": "llm_wiki/generation-policy/model-default-policy.md",
+      "title": "ModelDefault Two-Mode Policy",
+      "source_type": "GenerationPolicy",
+      "priority": "100",
+      "authority": "policy"
+    },
+    {
+      "path": "llm_wiki/generation-policy/pattern-generation-decision-rules.md",
+      "title": "Pattern Generation Decision Rules",
+      "source_type": "GenerationPolicy",
+      "priority": "100",
+      "authority": "policy"
+    },
+    {
+      "path": "llm_wiki/model-default/auto/README.md",
+      "title": "ModelDefault Auto Track",
+      "source_type": "ModelDefault",
+      "priority": "30",
+      "authority": "fallback"
+    },
+    {
+      "path": "llm_wiki/model-default/auto/default-compare-method.md",
+      "title": "Default Data Compare Method",
+      "source_type": "ModelDefault",
+      "priority": "30",
+      "authority": "fallback"
+    },
+    {
+      "path": "llm_wiki/model-default/auto/default-generated-file-style.md",
+      "title": "Default Generated File Style",
+      "source_type": "ModelDefault",
+      "priority": "30",
+      "authority": "fallback"
+    },
+    {
+      "path": "llm_wiki/model-default/auto/default-random-seed-policy.md",
+      "title": "Default Random Seed Policy",
+      "source_type": "ModelDefault",
+      "priority": "30",
+      "authority": "fallback"
+    },
+    {
+      "path": "llm_wiki/model-default/auto/default-reset-coverage-policy.md",
+      "title": "Default Reset Coverage Policy",
+      "source_type": "ModelDefault",
+      "priority": "30",
+      "authority": "fallback"
+    },
+    {
+      "path": "llm_wiki/model-default/blockers/README.md",
+      "title": "ModelDefault Blockers Track",
+      "source_type": "ModelDefault",
+      "priority": "30",
+      "authority": "fallback"
+    },
+    {
+      "path": "llm_wiki/model-default/blockers/missing-core-test-intent.md",
+      "title": "Missing Core Test Intent Blockers",
+      "source_type": "ModelDefault",
+      "priority": "30",
+      "authority": "fallback"
+    },
+    {
+      "path": "llm_wiki/model-default/proposed/README.md",
+      "title": "ModelDefault Proposed Track",
+      "source_type": "ModelDefault",
+      "priority": "30",
+      "authority": "fallback"
+    },
+    {
+      "path": "llm_wiki/model-default/reviewed/README.md",
+      "title": "ModelDefault Reviewed Track",
+      "source_type": "ModelDefault",
+      "priority": "30",
+      "authority": "fallback"
+    },
+    {
+      "path": "llm_wiki/prop-noun/ufs-proper-nouns.md",
+      "title": "UFS Proper Nouns and Abbreviations",
+      "source_type": "PropNoun",
+      "priority": "40",
+      "authority": "terminology"
+    },
+    {
+      "path": "llm_wiki/pypps-code/gitnexus-grounding-policy.md",
+      "title": "GitNexus Grounding Policy for PyPPS Code",
+      "source_type": "PyppsCode",
+      "priority": "70",
+      "authority": "code-reference"
+    },
+    {
+      "path": "llm_wiki/spec/scsi-basic-commands.md",
+      "title": "SCSI Basic Commands for PF010_0310",
+      "source_type": "Spec",
+      "priority": "60",
+      "authority": "protocol-reference"
+    },
+    {
+      "path": "llm_wiki/spec/scsi-write-read-10.md",
+      "title": "SCSI WRITE(10) and READ(10) Data Transfer",
+      "source_type": "Spec",
+      "priority": "60",
+      "authority": "protocol-reference"
+    },
+    {
+      "path": "llm_wiki/spec/ufs-query-interface.md",
+      "title": "UFS Query Interface",
+      "source_type": "Spec",
+      "priority": "60",
+      "authority": "protocol-reference"
+    },
+    {
+      "path": "llm_wiki/spec/ufs-reset-and-start-stop-unit.md",
+      "title": "UFS Reset and START STOP UNIT Power Modes",
+      "source_type": "Spec",
+      "priority": "60",
+      "authority": "protocol-reference"
+    },
+    {
+      "path": "llm_wiki/spec/ufs-writebooster-attributes.md",
+      "title": "UFS WriteBooster Attributes",
+      "source_type": "Spec",
+      "priority": "60",
+      "authority": "protocol-reference"
+    },
+    {
+      "path": "llm_wiki/spec/ufs-writebooster-flags.md",
+      "title": "UFS WriteBooster Flags",
+      "source_type": "Spec",
+      "priority": "60",
+      "authority": "protocol-reference"
+    },
+    {
+      "path": "llm_wiki/user-prompt/default-lun-selection.md",
+      "title": "Default Test LUN Selection from UserPrompt",
+      "source_type": "UserPrompt",
+      "priority": "100",
+      "authority": "user-rule"
+    }
+  ],
+  "page_count": 24,
+  "chunk_count": 34,
+  "index_status": "metadata_chunks_created; BM25/vector index implementation pending",
+  "sources": [
+    {
+      "key": "tc_pf010",
+      "path": "TC/PF010_0310-Normalize.md",
+      "sha256": "sha256:a66971c8216235bed2ceacc11a7157ea4ee60291172d63203c5d46ad31de7c6a"
+    },
+    {
+      "key": "user_prompt",
+      "path": "docx/UserPrompt/user_prompt.md",
+      "sha256": "sha256:eaff871dc4e8263d247c997663f92b0b376620c9a493e7e2e08995c036ac5904"
+    },
+    {
+      "key": "proper_nouns",
+      "path": "docx/PropNoun/proper_nouns.md",
+      "sha256": "sha256:245d902e31b0c67ec2d12e4e6496f52f892068405834b4e842e14b7f0df43243"
+    },
+    {
+      "key": "spec_flags",
+      "path": "docx/Spec/chapters/69_142_flags.md",
+      "sha256": "sha256:83e76b49724492c61a7017829becfde101172db821dcaacdaeb971d1250571a2"
+    },
+    {
+      "key": "spec_attrs",
+      "path": "docx/Spec/chapters/70_143_attributes.md",
+      "sha256": "sha256:1d342f410b14f8bce6edbf84ba3704ff5aad1e98504a84285e5c32609030c940"
+    },
+    {
+      "key": "spec_write10",
+      "path": "docx/Spec/chapters/39_11315_write_10_command.md",
+      "sha256": "sha256:fa29398d2a786d087f9b908e23a298593d9a1640599e3e52db55566e395f59be"
+    },
+    {
+      "key": "spec_reset_power",
+      "path": "docx/Spec/chapters/07_7_reset_power-up_and_power-down.md",
+      "sha256": "sha256:37ae368b262d687d196a62db11d36b7433b3f99f75750df08a2e64491db2a436"
+    },
+    {
+      "key": "spec_query",
+      "path": "docx/Spec/chapters/27_1099_query_function_transport_protocol_services.md",
+      "sha256": "sha256:a49fc842208380ccc479c7ac87d3ed9aa95a1d6f41c59581ac8729c2959f9c12"
+    }
+  ]
+}

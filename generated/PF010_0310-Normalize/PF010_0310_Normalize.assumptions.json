@@ -1,0 +1,152 @@
+{
+  "pattern_name": "PF010_0310-Normalize",
+  "generated_at": "2026-06-14T18:46:47.326608+00:00",
+  "generation_model": "flow_scoped_retrieval_stateful_flow_level_generation",
+  "mode": "auto_accept_for_HARD_DEFAULT_and_recorded_SOFT_ASSUMPTION",
+  "assumptions": [
+    {
+      "id": "A001",
+      "scope": "global",
+      "category": "SOFT_ASSUMPTION",
+      "field": "compare_method",
+      "value": "api.CompareMethod.HW_COMPARE",
+      "source": "llm_wiki/model-default/auto/default-compare-method.md#chunk-002",
+      "depends_on": [
+        "flow_1.write_record",
+        "flow_2.write_record"
+      ],
+      "reason": "TC requires Data Match but does not specify HW vs SW compare; PyPPS random_write sample uses HW_COMPARE."
+    },
+    {
+      "id": "A002",
+      "scope": "global",
+      "category": "SOFT_ASSUMPTION",
+      "field": "random_seed",
+      "value": 310,
+      "source": "llm_wiki/model-default/auto/default-random-seed-policy.md#chunk-002",
+      "depends_on": [
+        "random_write",
+        "random_read"
+      ],
+      "reason": "TC requests random ranges but does not specify seed; pattern allows override via tcsargs seed."
+    },
+    {
+      "id": "A003",
+      "scope": "global",
+      "category": "SOFT_ASSUMPTION",
+      "field": "burn_in_loop",
+      "value": 1,
+      "source": "ModelDefault/generated implementation default",
+      "depends_on": [
+        "all looped flows"
+      ],
+      "reason": "TC references burn_in_loop but does not provide numeric count; override via tcsargs burn_in_loop."
+    },
+    {
+      "id": "A004",
+      "scope": "global",
+      "category": "SOFT_ASSUMPTION",
+      "field": "cmd_count",
+      "value": 8,
+      "source": "ModelDefault/generated implementation default",
+      "depends_on": [
+        "random_write",
+        "random_read"
+      ],
+      "reason": "TC does not specify number of random W/R commands; override via tcsargs cmd_count."
+    },
+    {
+      "id": "A005",
+      "scope": "global",
+      "category": "HARD_DEFAULT",
+      "field": "transfer_length_units",
+      "value": "4K blocks",
+      "source": "project decision",
+      "depends_on": [
+        "all LBA/transfer fields"
+      ],
+      "reason": "All sizes/LBA units in this workflow use 4K blocks."
+    },
+    {
+      "id": "A006",
+      "scope": "flow_1,flow_2,flow_3",
+      "category": "SOFT_ASSUMPTION",
+      "field": "reset_coverage",
+      "value": [
+        "SSU",
+        "POR",
+        "LINKSTARTUP"
+      ],
+      "source": "llm_wiki/model-default/auto/default-reset-coverage-policy.md#chunk-002",
+      "depends_on": [
+        "reset_type loop"
+      ],
+      "reason": "TC says random SSU + all reset; generated pattern covers all listed reset types deterministically."
+    },
+    {
+      "id": "A007",
+      "scope": "flow_1,flow_3",
+      "category": "SOFT_ASSUMPTION",
+      "field": "expected_volatile_flag_after_reset",
+      "value": "SSU -> 1, POR/LINKSTARTUP -> 0",
+      "source": "TC + LLM Wiki WriteBooster flags/reset pages",
+      "depends_on": [
+        "reset_type",
+        "pre-reset flag set state"
+      ],
+      "reason": "Expected value is now flow-scoped and computed from reset_type instead of globally inferred."
+    },
+    {
+      "id": "A008",
+      "scope": "flow_1,flow_2,flow_3",
+      "category": "TODO_REVIEW",
+      "field": "LINKSTARTUP primitive",
+      "value": "api.Dcmd5ResetType.UNIPRO_RESET",
+      "source": "/home/weikai/Script/api/ufs_api/debug_cmd/dcmd_enum.py",
+      "depends_on": [
+        "reset_type=LINKSTARTUP"
+      ],
+      "reason": "Current PyPPS enum has UNIPRO_RESET, no explicit LINKSTARTUP_RESET name found."
+    },
+    {
+      "id": "A009",
+      "scope": "flow_0_setup",
+      "category": "TODO_REVIEW",
+      "field": "dLUNumWriteBoosterBufferAllocUnits write",
+      "value": "skipped",
+      "source": "/home/weikai/Script/api/ufs_api/defines/enum_define.py",
+      "depends_on": [
+        "Step 0.4"
+      ],
+      "reason": "TC says attribute IDN 0x17, but current PyPPS AttributeIDN maps 0x17 to REF_CLK_GATING_WAIT_TIME and has no exact enum."
+    },
+    {
+      "id": "A010",
+      "scope": "flow_0_setup",
+      "category": "TODO_REVIEW",
+      "field": "fWriteBoosterSupport enum",
+      "value": "numeric 0x15",
+      "source": "TC appendix",
+      "depends_on": [
+        "Step 0.3"
+      ],
+      "reason": "Current PyPPS FlagIDN enum has no fWriteBoosterSupport; pattern uses numeric 0x15 for support check."
+    },
+    {
+      "id": "A011",
+      "scope": "flow_x_ffu",
+      "category": "TODO_REVIEW",
+      "field": "FFU flow implementation",
+      "value": "disabled placeholder",
+      "source": "TC Phase X + /home/weikai/Script/pattern/sample_code/ffu_sample.py",
+      "depends_on": [
+        "firmware_path",
+        "target_version",
+        "trigger_policy"
+      ],
+      "reason": "TC mentions FFU at burn-in 1/3 but lacks firmware image path/version/trigger; flow is represented but disabled."
+    }
+  ],
+  "blockers": [],
+  "todo_review_count": 4
+}

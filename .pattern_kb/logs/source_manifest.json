@@ -1,0 +1,42 @@
+[
+  {
+    "key": "tc_pf010",
+    "path": "TC/PF010_0310-Normalize.md",
+    "sha256": "sha256:a66971c8216235bed2ceacc11a7157ea4ee60291172d63203c5d46ad31de7c6a"
+  },
+  {
+    "key": "user_prompt",
+    "path": "docx/UserPrompt/user_prompt.md",
+    "sha256": "sha256:eaff871dc4e8263d247c997663f92b0b376620c9a493e7e2e08995c036ac5904"
+  },
+  {
+    "key": "proper_nouns",
+    "path": "docx/PropNoun/proper_nouns.md",
+    "sha256": "sha256:245d902e31b0c67ec2d12e4e6496f52f892068405834b4e842e14b7f0df43243"
+  },
+  {
+    "key": "spec_flags",
+    "path": "docx/Spec/chapters/69_142_flags.md",
+    "sha256": "sha256:83e76b49724492c61a7017829becfde101172db821dcaacdaeb971d1250571a2"
+  },
+  {
+    "key": "spec_attrs",
+    "path": "docx/Spec/chapters/70_143_attributes.md",
+    "sha256": "sha256:1d342f410b14f8bce6edbf84ba3704ff5aad1e98504a84285e5c32609030c940"
+  },
+  {
+    "key": "spec_write10",
+    "path": "docx/Spec/chapters/39_11315_write_10_command.md",
+    "sha256": "sha256:fa29398d2a786d087f9b908e23a298593d9a1640599e3e52db55566e395f59be"
+  },
+  {
+    "key": "spec_reset_power",
+    "path": "docx/Spec/chapters/07_7_reset_power-up_and_power-down.md",
+    "sha256": "sha256:37ae368b262d687d196a62db11d36b7433b3f99f75750df08a2e64491db2a436"
+  },
+  {
+    "key": "spec_query",
+    "path": "docx/Spec/chapters/27_1099_query_function_transport_protocol_services.md",
+    "sha256": "sha256:a49fc842208380ccc479c7ac87d3ed9aa95a1d6f41c59581ac8729c2959f9c12"
+  }
+]

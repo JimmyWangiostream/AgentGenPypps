@@ -1,0 +1,15 @@
+{
+  "generated_at": "2026-06-14T17:11:11.130838+00:00",
+  "chunks_path": ".pattern_kb/index/chunks.jsonl",
+  "chunks_sha256": "sha256:aac3418e5305dac57eef18219b380167be6fa03cc3c43750d4b91a34888b50bb",
+  "chunk_count": 34,
+  "dense_backend": "sentence-transformer",
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "dimension": 384,
+  "files": {
+    "embeddings": "embeddings.npy",
+    "chunk_ids": "chunk_ids.json",
+    "metadata": "metadata.json",
+    "manifest": "manifest.json"
+  }
+}
